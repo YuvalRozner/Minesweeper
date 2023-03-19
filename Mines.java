@@ -127,15 +127,23 @@ public class Mines {
 		return (width * height - numMines == numOfOpenedPlaces);
 	}
 
+	// isDone method returns true if and only if this place has a flag on.
+	public boolean hasFlag(int x, int y) {
+		return board[x][y].flag;
+	}
+	
+	// isDone method returns true if and only if this place is opened.
+	public boolean isOpen(int x, int y) {
+		return board[x][y].opened;
+	}
+		
 	// get method gets indexes of a place on the board and returns the right sign of it.
 	// if not opened: "F" if has flag, "." if not.
 	// if opened: "X" is mine, else number of mines around or " " if zero mines around.
 	public String get(int i, int j) {
-		if (!showAll && !board[i][j].opened)
-			return (board[i][j].flag) ? "F" : ".";
-		if (board[i][j].mine)
-			return "X";
-		return (board[i][j].numOfMinesAround == 0) ? " " : String.valueOf(board[i][j].numOfMinesAround);
+		if (showAll || board[i][j].opened)
+			return (board[i][j].numOfMinesAround == 0) ? "" : String.valueOf(board[i][j].numOfMinesAround);
+		return " ";
 	}
 
 	// setShowAll method, set the value of showAll field.
