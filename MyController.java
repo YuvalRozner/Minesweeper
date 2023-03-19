@@ -33,7 +33,7 @@ public class MyController {
 	// reset is a method created from the FXML file to define what the 'reset' button does.
 	// when the 'reset' button clicked, it creates a new blank game board.
 	void reset(ActionEvent event) {
-		mainClass.createBoardGrid(getHeight(), getWidth(), getMines());
+		mainClass.createBoardGrid(getHeight(), getWidth(), getMines(), true);
 	}
 
 	@FXML

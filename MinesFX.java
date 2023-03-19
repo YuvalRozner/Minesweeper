@@ -14,6 +14,11 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundImage;
+import javafx.scene.layout.BackgroundPosition;
+import javafx.scene.layout.BackgroundRepeat;
+import javafx.scene.layout.BackgroundSize;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.text.Font;
@@ -93,7 +98,7 @@ public class MinesFX extends Application {
 
 	// createBoardGrid method, creates a new game, and a new board which is a grid of IndexedButtons.
 	// it use Mine class to set the game itself, and to control the sign of each button.
-	public void createBoardGrid(int height, int width, int mines) {
+	public void createBoardGrid(int height, int width, int mines, boolean isNew) {
 		minesCount = 0; // resets the counter of the flag from last game.
 		// sets the properties of the game:
 		this.height = height;
@@ -102,7 +107,8 @@ public class MinesFX extends Application {
 		lifesCounter = 3;
 		controller.setLifes(lifesCounter);
 		controller.setNewMinesCounting(0, mines); // resets the mines counting
-		game = new Mines(height, width, mines); // creates the backend of the game.
+		if(isNew) // should I create a new backend game (randomize the board).
+			game = new Mines(height, width, mines); // creates the backend of the game.
 
 		boardGrid = new GridPane(); // creates the grid for placing the buttons in it.
 		boardGrid.setAlignment(Pos.CENTER); // set it to the center of the window.
@@ -136,8 +142,10 @@ public class MinesFX extends Application {
 		minesCount = 0; // resets the counter.
 		for (int i = 0; i < height; i++)
 			for (int j = 0; j < width; j++) {
-				boardButtons[i][j]. setText(game.get(i, j));
-				if (game.get(i, j) == "F") // checks if it is a flag.
+				boardButtons[i][j].setText(game.get(i, j));
+				if(game.get(i, j) == "")
+					boardButtons[i][j].setDisable(true); // Set the button to be disabled
+				if (game.hasFlag(i, j)) // checks if it is a flag.
 					minesCount++; // count how may flags already set.
 			}
 		controller.setNewMinesCounting(minesCount, mines); // sets the new counting of flags.
@@ -153,17 +161,55 @@ public class MinesFX extends Application {
 			int col = button.col;
 			MouseButton bType = event.getButton();
 			if (bType == MouseButton.PRIMARY) { // if the left mouse button pressed, open.
-				if (!game.open(row, col)) { // checks losing. if open a mine.
-					controller.setLifes(--lifesCounter);
-					if (lifesCounter == 0) {
-						game.setShowAll(true); // if lose, it reveals the board.
-						popUpMessage("Opss..");
+				if(!game.hasFlag(row, col)) {
+					if (!game.open(row, col)) { // checks losing. if open a mine.
+						// Create a BackgroundImage object with the bomb image:
+						File file = new File("src/mines/bomb.png");
+						Image image = new Image(file.toURI().toString());
+						BackgroundImage backgroundBombImage = new BackgroundImage(
+								image,
+						        BackgroundRepeat.REPEAT,
+						        BackgroundRepeat.REPEAT,
+						        BackgroundPosition.CENTER,
+						        new BackgroundSize(BackgroundSize.AUTO, BackgroundSize.AUTO, true, true, true, false)
+						);
+						boardButtons[row][col].setBackground(new Background(backgroundBombImage));
+						boardButtons[row][col].setDisable(true);
+						//life handle:
+						controller.setLifes(--lifesCounter);
+						if (lifesCounter == 0) {
+							game.setShowAll(true); // if lose, it reveals the board.
+							popUpMessage("Opss..");
+						}
+					}
+					if (game.isDone()) // checks winning.
+						popUpMessage("OMG, You Won!!!");
+				}
+			} else if (bType == MouseButton.SECONDARY) { // if the right mouse button pressed, toggle flag.
+				if(!game.isOpen(row, col)) {
+					// Create a BackgroundImage object with the flag image:
+					File file = new File("src/mines/flag.png");
+					Image image = new Image(file.toURI().toString());
+					BackgroundImage backgroundFlagImage = new BackgroundImage(
+							image,
+					        BackgroundRepeat.REPEAT,
+					        BackgroundRepeat.REPEAT,
+					        BackgroundPosition.CENTER,
+					        new BackgroundSize(BackgroundSize.AUTO, BackgroundSize.AUTO, true, true, true, false)
+					);
+					game.toggleFlag(row, col);
+					if(game.hasFlag(row, col)) // Set the background of the button to the BackgroundImage object
+						boardButtons[row][col].setBackground(new Background(backgroundFlagImage));
+					else {
+						boardButtons[row][col].setBackground(Background.EMPTY);
+						boardButtons[row][col] = new IndexedButton(game.get(row, col), row, col);
+						boardButtons[row][col].setMinHeight(28);
+						boardButtons[row][col].setMinWidth(28);
+						boardButtons[row][col].setOnMouseClicked(new play());
+						boardGrid.add(boardButtons[row][col], col, row);
 					}
 				}
-				if (game.isDone()) // checks winning.
-					popUpMessage("OMG, You Won!!!");
-			} else if (bType == MouseButton.SECONDARY) // if the right mouse button pressed, toggle flag.
-				game.toggleFlag(row, col);
+			}
 			reshowAllBoardSigns();
 		}
 	}
@@ -184,6 +230,7 @@ public class MinesFX extends Application {
 
 	// startOver method, resets the same game board for another try.
 	public void startOver() {
+		createBoardGrid(height, width, mines, false);
 		game.startOver();
 		game.setShowAll(false);
 		lifesCounter = 3;
